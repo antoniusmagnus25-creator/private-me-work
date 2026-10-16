@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a3d36">
+<title>Private Me Work</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>const CFG={url:'https://xdzwnwkwdzadkwnvzxkl.supabase.co',key:'sb_publishable_k9td9Qw0_Tc1wNeLc197XA_DjlFOAT3'};</script>
+</head><body>
+<main class="wrap" id="app"></main><nav class="tabs" id="nav"></nav><div id="tt" role="status"></div>
+<script>
+const sb=supabase.createClient(CFG.url,CFG.key),$=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const ST={attesa:['wa','In attesa'],ok:['ok','Approvata'],no:['no','Rifiutata']};
+const bg=s=>`<span class="bg ${ST[s][0]}">${ST[s][1]}</span>`;
+const toast=m=>{const t=$('#tt');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)};
+let P=null,tab='badge',bt;
+
+const login=(m='')=>{clearInterval(bt);$('#nav').innerHTML='';$('#app').innerHTML=`<div class="login"><h1>Private Me <span>Work</span></h1><p class="sub">Accedi con le credenziali aziendali</p><label for="em">Email</label><input id="em" type="email" autocomplete="username"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"><p class="msg">${m}</p><button class="btn" id="go">Accedi</button></div>`;
+ const go=async()=>{const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});error?login('Email o password non corrette'):boot()};
+ $('#go').onclick=go;$('#pw').onkeydown=e=>{if(e.key=='Enter')go()}};
+
+const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!session)return login();
+ const{data}=await sb.from('profili').select('*').eq('id',session.user.id).maybeSingle();
+ if(!data){$('#app').innerHTML='<h1>Profilo non trovato</h1><p class="sub">Chiedi alle Risorse Umane di completare la tua registrazione.</p><button class="btn" id="lo">Esci</button>';$('#lo').onclick=out;return}
+ P=data;show()};
+const out=async()=>{await sb.auth.signOut();login()};
+
+const show=()=>{clearInterval(bt);
+ $('#nav').innerHTML=[['badge','Badge'],['rich','Richieste'],['avv','Avvisi'],['prof','Profilo']].map(t=>`<button class="${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('');
+ V[tab]()};
+
+const scaduta=()=>P.formazione_scadenza&&P.formazione_scadenza<new Date().toISOString().slice(0,10);
+const V={
+badge:async()=>{$('#app').innerHTML=`<h1>${esc(P.nome)}</h1><p class="sub">Matricola ${esc(P.matricola||'-')} · ${esc(P.sede||'')}</p><div class="card c"><div class="qr" id="qr"></div><div class="bar"><i id="bi"></i></div><p class="sub" id="bs" style="margin:0"></p><p class="tk" id="tk"></p></div>${scaduta()?'<p class="msg">Formazione sicurezza scaduta: ai tornelli l\'accesso verrà negato.</p>':''}<p class="sub">Avvicina il codice al lettore del tornello. Cambia ogni 30 secondi.</p>`;
+ let t0=0;const load=async()=>{const{data,error}=await sb.rpc('genera_badge');if(error){$('#bs').textContent='Impossibile generare il badge. Riprova.';return}
+  t0=Date.now();$('#qr').innerHTML='';new QRCode($('#qr'),{text:data,width:200,height:200,colorDark:'#14231f',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});$('#tk').textContent=data};
+ await load();bt=setInterval(()=>{const s=30-Math.floor((Date.now()-t0)/1000);if(!$('#bi'))return;$('#bi').style.width=Math.max(s,0)/30*100+'%';$('#bs').textContent='Si aggiorna tra '+Math.max(s,0)+' s';if(s<=0)load()},1000)},
+
+rich:async()=>{const{data}=await sb.from('richieste').select('*').eq('profilo_id',P.id).order('creata_il',{ascending:false});
+ $('#app').innerHTML=`<h1>Richieste</h1><p class="sub">Ferie, permessi e certificati di malattia</p><div class="card"><label for="tp">Tipo</label><select id="tp"><option>Ferie</option><option>Permesso</option><option>Malattia</option></select><label for="dl">Dal</label><input type="date" id="dl"><label for="al">Al</label><input type="date" id="al"><label for="pr">Protocollo certificato (solo per malattia, mai la diagnosi)</label><input id="pr"><label for="nt">Nota (facoltativa)</label><textarea id="nt" rows="2"></textarea><button class="btn" id="sn">Invia richiesta</button></div><h2>Le mie richieste</h2>${(data||[]).map(r=>`<div class="card row"><div><b>${esc(r.tipo)}</b><div class="sub" style="margin:0">${esc(r.dal)} → ${esc(r.al)}</div></div>${bg(r.stato)}</div>`).join('')||'<p class="sub">Nessuna richiesta inviata.</p>'}`;
+ $('#sn').onclick=async()=>{const dal=$('#dl').value,al=$('#al').value,tipo=$('#tp').value;if(!dal||!al)return toast('Scegli le date');if(tipo=='Malattia'&&!$('#pr').value.trim())return toast('Inserisci il numero di protocollo');
+  const{error}=await sb.from('richieste').insert({azienda_id:P.azienda_id,profilo_id:P.id,tipo,dal,al,nota:$('#nt').value.trim()||null,protocollo:$('#pr').value.trim()||null});
+  if(error)return toast('Invio non riuscito, riprova');toast('Richiesta inviata alle Risorse Umane');V.rich()}},
+
+avv:async()=>{const[a,l]=await Promise.all([sb.from('avvisi').select('*').order('creato_il',{ascending:false}),sb.from('letture_avvisi').select('avviso_id').eq('profilo_id',P.id)]);
+ const letti=new Set((l.data||[]).map(x=>x.avviso_id));
+ $('#app').innerHTML=`<h1>Bacheca</h1><p class="sub">Comunicazioni dell'azienda</p>${(a.data||[]).map(v=>`<div class="card">${v.importante?'<span class="bg no">Importante</span> ':''}<b>${esc(v.titolo)}</b><p class="sub" style="margin:6px 0 10px">${esc(v.testo)}</p>${letti.has(v.id)?'<span class="bg ok">Letto</span>':`<button class="btn s" data-l="${v.id}" style="margin:0">Ho letto</button>`}</div>`).join('')||'<p class="sub">Nessun avviso.</p>'}`},
+
+prof:()=>{$('#app').innerHTML=`<h1>Profilo</h1><p class="sub">${esc(P.nome)}</p><div class="card">${[['Ruolo',P.ruolo_lavoro],['Sede',P.sede],['Matricola',P.matricola],['Formazione sicurezza',P.formazione_scadenza?(scaduta()?'Scaduta il ':'Valida fino al ')+P.formazione_scadenza:'—']].map(r=>`<div class="row" style="padding:8px 0"><span class="sub" style="margin:0">${r[0]}</span><b>${esc(r[1]||'—')}</b></div>`).join('')}</div><button class="btn t" id="lo">Esci</button>`;$('#lo').onclick=out}};
+
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-t]'),l=e.target.closest('[data-l]');
+ if(t){tab=t.dataset.t;show();scrollTo(0,0)}
+ if(l){const{error}=await sb.from('letture_avvisi').insert({avviso_id:l.dataset.l,profilo_id:P.id});toast(error?'Operazione non riuscita':'Lettura confermata');V.avv()}});
+boot();
+</script></body></html>
