@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Private Me Work · Dashboard HR</title>
+<title>Private Me Work · Dashboard HR</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#033155">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -17,7 +17,7 @@ const dt=s=>new Date(s).toLocaleString('it-IT',{day:'2-digit',month:'short',hour
 const toast=m=>{const t=$('#tt');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)};
 let P=null,tab='ric';
 
-const login=(m='')=>{$('#app').innerHTML=`<div style="max-width:380px;margin:60px auto"><h1>Private Me <span>Work</span></h1><p class="sub">Dashboard Risorse Umane</p><label for="em">Email</label><input id="em" type="email" autocomplete="username"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"><p class="msg">${m}</p><button class="btn" id="go">Accedi</button></div>`;
+const login=(m='')=>{$('#app').innerHTML=`<div style="max-width:380px;margin:40px auto"><img class="lg" src="logo-work.png" alt="Private Me Work" width="150" height="150"><p class="sub">Dashboard Risorse Umane</p><label for="em">Email</label><input id="em" type="email" autocomplete="username"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"><p class="msg">${m}</p><button class="btn" id="go">Accedi</button></div>`;
  const go=async()=>{const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});error?login('Email o password non corrette'):boot()};
  $('#go').onclick=go;$('#pw').onkeydown=e=>{if(e.key=='Enter')go()}};
 const out=async()=>{await sb.auth.signOut();login()};

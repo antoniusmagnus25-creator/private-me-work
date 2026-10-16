@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1a3d36">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#033155">
 <title>Private Me Work</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -18,7 +18,7 @@ const bg=s=>`<span class="bg ${ST[s][0]}">${ST[s][1]}</span>`;
 const toast=m=>{const t=$('#tt');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)};
 let P=null,tab='badge',bt;
 
-const login=(m='')=>{clearInterval(bt);$('#nav').innerHTML='';$('#app').innerHTML=`<div class="login"><h1>Private Me <span>Work</span></h1><p class="sub">Accedi con le credenziali aziendali</p><label for="em">Email</label><input id="em" type="email" autocomplete="username"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"><p class="msg">${m}</p><button class="btn" id="go">Accedi</button></div>`;
+const login=(m='')=>{clearInterval(bt);$('#nav').innerHTML='';$('#app').innerHTML=`<div class="login"><img class="lg" src="logo-work.png" alt="Private Me Work" width="150" height="150"><p class="sub">Accedi con le credenziali aziendali</p><label for="em">Email</label><input id="em" type="email" autocomplete="username"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"><p class="msg">${m}</p><button class="btn" id="go">Accedi</button></div>`;
  const go=async()=>{const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});error?login('Email o password non corrette'):boot()};
  $('#go').onclick=go;$('#pw').onkeydown=e=>{if(e.key=='Enter')go()}};
 
