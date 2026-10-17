@@ -25,7 +25,7 @@ const login=(m='')=>{clearInterval(bt);$('#nav').innerHTML='';$('#app').innerHTM
 const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!session)return login();
  const{data}=await sb.from('profili').select('*').eq('id',session.user.id).maybeSingle();
  if(!data){$('#app').innerHTML='<h1>Profilo non trovato</h1><p class="sub">Chiedi alle Risorse Umane di completare la tua registrazione.</p><button class="btn" id="lo">Esci</button>';$('#lo').onclick=out;return}
- P=data;show()};
+ P=data;if(session.user.user_metadata?.cambia_password)return pwScreen(show);show()};
 const out=async()=>{await sb.auth.signOut();login()};
 
 const show=()=>{clearInterval(bt);
@@ -54,5 +54,7 @@ prof:()=>{$('#app').innerHTML=`<h1>Profilo</h1><p class="sub">${esc(P.nome)}</p>
 document.addEventListener('click',async e=>{const t=e.target.closest('[data-t]'),l=e.target.closest('[data-l]');
  if(t){tab=t.dataset.t;show();scrollTo(0,0)}
  if(l){const{error}=await sb.from('letture_avvisi').insert({avviso_id:l.dataset.l,profilo_id:P.id});toast(error?'Operazione non riuscita':'Lettura confermata');V.avv()}});
+const pwScreen=next=>{if($('#nav'))$('#nav').innerHTML='';$('#app').innerHTML=`<div class="login"><h1>Scegli la tua password</h1><p class="sub">Primo accesso: imposta una password personale (almeno 8 caratteri).</p><label for="n1">Nuova password</label><input id="n1" type="password" autocomplete="new-password"><label for="n2">Ripeti la password</label><input id="n2" type="password" autocomplete="new-password"><p class="msg" id="pe"></p><button class="btn" id="ps">Salva e continua</button></div>`;
+ $('#ps').onclick=async()=>{const a=$('#n1').value;if(a.length<8)return $('#pe').textContent='Almeno 8 caratteri';if(a!==$('#n2').value)return $('#pe').textContent='Le password non coincidono';const{error}=await sb.auth.updateUser({password:a,data:{cambia_password:false}});if(error)return $('#pe').textContent='Non riesco a salvare: '+error.message;next()}};
 boot();
 </script></body></html>

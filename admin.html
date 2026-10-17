@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Private Me Work · Pannello proprietario</title>
+<link rel="icon" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>const CFG={url:'https://xdzwnwkwdzadkwnvzxkl.supabase.co',key:'sb_publishable_k9td9Qw0_Tc1wNeLc197XA_DjlFOAT3'};</script>
+</head><body>
+<main class="wrap" id="app"></main><div id="tt" role="status" style="bottom:28px"></div>
+<script>
+const sb=supabase.createClient(CFG.url,CFG.key),$=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const toast=m=>{const t=$('#tt');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)};
+const out=async()=>{await sb.auth.signOut();login()};
+const login=(m='')=>{$('#app').innerHTML=`<div class="login"><img class="lg" src="logo-work.png" alt="Private Me Work" width="150" height="150"><p class="sub">Pannello proprietario</p><label for="em">Email</label><input id="em" type="email" autocomplete="username"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"><p class="msg">${m}</p><button class="btn" id="go">Accedi</button></div>`;
+ const go=async()=>{const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});error?login('Email o password non corrette'):boot()};
+ $('#go').onclick=go;$('#pw').onkeydown=e=>{if(e.key=='Enter')go()}};
+const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!session)return login();
+ const{data,error}=await sb.functions.invoke('admin-api',{body:{azione:'elenco_aziende'}});
+ if(error||!data?.aziende){$('#app').innerHTML='<h1>Accesso riservato</h1><p class="sub">Questo pannello è dedicato al proprietario della piattaforma (oppure la funzione admin-api non è ancora attiva).</p><button class="btn" id="lo">Esci</button>';$('#lo').onclick=out;return}
+ show(data.aziende)};
+const show=az=>{$('#app').innerHTML=`<div class="row"><h1>Aziende clienti</h1><button class="btn t s" id="lo">Esci</button></div><p class="sub">Crea l'azienda e il suo primo account Risorse Umane. Poi sarà l'HR ad aggiungere i dipendenti dalla propria dashboard.</p>
+<div class="card"><h2 style="margin-top:0">Nuova azienda</h2><label for="an">Nome azienda</label><input id="an"><label for="hn">Referente HR (nome e cognome)</label><input id="hn"><label for="he">Email del referente HR</label><input id="he" type="email"><button class="btn" id="cr">Crea azienda</button><div id="rs"></div></div>
+<h2>Aziende attive (${az.length})</h2>${az.map(a=>`<div class="card row"><b>${esc(a.nome)}</b><span class="bg ok">${a.profili?.[0]?.count??0} persone</span></div>`).join('')||'<p class="sub">Nessuna azienda.</p>'}`;
+ $('#lo').onclick=out;
+ $('#cr').onclick=async()=>{const body={azione:'crea_azienda',nome:$('#an').value,hr_nome:$('#hn').value,hr_email:$('#he').value};if(!body.nome.trim()||!body.hr_nome.trim()||!body.hr_email.trim())return toast('Compila tutti i campi');
+  $('#cr').disabled=true;const{data,error}=await sb.functions.invoke('admin-api',{body});$('#cr').disabled=false;
+  if(error||!data?.password)return toast('Creazione non riuscita: controlla i dati e che l\'email non sia già usata');
+  $('#rs').innerHTML=`<div class="card" style="background:var(--tint);margin-top:16px"><b>${esc(data.azienda)}</b> creata.<p class="sub" style="margin:8px 0">Invia al referente queste credenziali (la password è temporanea e andrà cambiata al primo accesso, non sarà più visibile):</p><p><b>Indirizzo:</b> www.privateme.work/hr.html<br><b>Email:</b> ${esc(data.email)}<br><b>Password:</b> <code>${esc(data.password)}</code></p></div>`;
+  const{data:d2}=await sb.functions.invoke('admin-api',{body:{azione:'elenco_aziende'}});if(d2?.aziende){const c=$('#rs').innerHTML;show(d2.aziende);$('#rs').innerHTML=c}}};
+boot();
+</script></body></html>
