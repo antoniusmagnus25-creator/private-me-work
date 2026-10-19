@@ -25,7 +25,7 @@ const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!sessio
  const{data}=await sb.from('profili').select('*').eq('id',session.user.id).maybeSingle();
  if(!data||!['hr','admin'].includes(data.ruolo_app)){$('#app').innerHTML='<h1>Accesso riservato</h1><p class="sub">Questa area è dedicata alle Risorse Umane.</p><button class="btn" id="lo">Esci</button>';$('#lo').onclick=out;return}
  P=data;if(session.user.user_metadata?.cambia_password)return pwScreen(show);show()};
-const show=()=>{const T=[['ric','Richieste'],['avv','Avvisi'],['acc','Accessi'],['dip','Dipendenti'],['tor','Tornello (prova)']];
+const show=()=>{const T=[['ric','Richieste'],['avv','Avvisi'],['acc','Accessi'],['dip','Dipendenti'],['ori','Orari'],['tor','Tornello (prova)']];
  $('#app').innerHTML=`<div class="row"><h1>${esc(P.nome)} <span>· HR</span></h1><button class="btn t s" id="lo">Esci</button></div><div class="top">${T.map(t=>`<button class="${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('')}</div><section id="v"></section>`;$('#lo').onclick=out;V[tab]()};
 const tbl=(h,r)=>`<div class="card tw"><table><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${r||`<tr><td colspan="${h.length}" class="sub">Nessun dato.</td></tr>`}</tbody></table></div>`;
 const V={
@@ -59,5 +59,41 @@ document.addEventListener('click',async e=>{const w=e.target.closest('[data-pw]'
  if(e.target.id=='cp'){try{await navigator.clipboard.writeText(window.CRED||'');toast('Elenco copiato')}catch(_){toast('Copia non riuscita: selezionalo a mano')}}
  if(w){if(!confirm('Generare una nuova password temporanea per questa persona?'))return;const{data,error}=await sb.functions.invoke('admin-api',{body:{azione:'reset_password',profilo_id:w.dataset.pw}});alert(error||!data?.password?'Operazione non riuscita':'Nuova password temporanea: '+data.password+'\nLa persona dovrà cambiarla al primo accesso.')}
  if(a){const[id,v]=a.dataset.at.split(':');const{error}=await sb.from('profili').update({attivo:v=='1'}).eq('id',id);toast(error?'Operazione non riuscita':v=='1'?'Account riattivato':'Account disattivato');V.dip()}});
+const fd=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const lun=d=>{const x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
+let wk=lun(new Date());window.TT={};window.PE=[];
+const GG=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+const sv=async q=>{const{error}=await q;if(error)toast('Salvataggio non riuscito')};
+V.ori=async()=>{const days=[...Array(7)].map((_,i)=>{const d=new Date(wk);d.setDate(wk.getDate()+i);return d});
+ const[pe,tu]=await Promise.all([sb.from('profili').select('id,nome,sede').eq('attivo',true).order('nome'),sb.from('turni').select('*').gte('giorno',fd(days[0])).lte('giorno',fd(days[6]))]);
+ window.PE=pe.data||[];window.TT={};(tu.data||[]).forEach(t=>window.TT[t.profilo_id+'|'+t.giorno]=t);
+ const cell=(p,d)=>{const t=window.TT[p.id+'|'+fd(d)];return `<td><button class="btn t s" style="width:100%;margin:0;white-space:nowrap;${t&&t.tipo=='riposo'?'opacity:.6':''}" data-c="${p.id}|${fd(d)}">${t?(t.tipo=='riposo'?'Riposo':t.inizio.slice(0,5)+'–'+t.fine.slice(0,5)):'+'}</button></td>`};
+ const lb=d=>d.toLocaleDateString('it-IT',{day:'numeric',month:'long'});
+ $('#v').innerHTML=`<div class="card row"><button class="btn t s" data-w="-1">‹ Precedente</button><b>${lb(days[0])} – ${lb(days[6])} ${days[6].getFullYear()}</b><button class="btn t s" data-w="1">Successiva ›</button></div>`
+ +tbl(['Dipendente',...days.map((d,i)=>GG[i]+' '+d.getDate())],PE.map(p=>`<tr><td><b>${esc(p.nome)}</b></td>${days.map(d=>cell(p,d)).join('')}</tr>`).join(''))
+ +`<p class="sub">Tocca una casella per cambiare un singolo giorno. Per programmare un periodo intero usa il modulo qui sotto.</p>
+<div class="card"><h2 style="margin-top:0">Assegna orari</h2><label>Dipendenti</label><button class="btn t s" id="sa">Seleziona tutti</button><div style="max-height:170px;overflow:auto;margin-top:8px">${PE.map(p=>`<label class="row" style="justify-content:flex-start;margin:6px 0;font-weight:500"><input type="checkbox" class="pe" value="${p.id}" style="width:auto"> ${esc(p.nome)}</label>`).join('')}</div>
+<div class="row"><div style="flex:1"><label for="d1">Dal</label><input type="date" id="d1" value="${fd(days[0])}"></div><div style="flex:1"><label for="d2">Al</label><input type="date" id="d2" value="${fd(days[6])}"></div></div>
+<label>Giorni della settimana</label><div class="row" style="justify-content:flex-start;gap:4px 14px">${GG.map((g,i)=>`<label class="row" style="margin:4px 0;font-weight:500"><input type="checkbox" class="gg" value="${i}" ${i<5?'checked':''} style="width:auto"> ${g}</label>`).join('')}</div>
+<label for="ty">Tipo di giornata</label><select id="ty"><option value="lavoro">Giornata di lavoro</option><option value="riposo">Riposo</option></select>
+<div class="row"><div style="flex:1"><label for="t1">Dalle</label><input type="time" id="t1" value="09:00"></div><div style="flex:1"><label for="t2">Alle</label><input type="time" id="t2" value="18:00"></div></div>
+<button class="btn" id="ap">Applica orari</button></div>`;
+ $('#sa').onclick=()=>document.querySelectorAll('.pe').forEach(x=>x.checked=true);
+ $('#ap').onclick=async()=>{const ids=[...document.querySelectorAll('.pe:checked')].map(x=>x.value),gg=[...document.querySelectorAll('.gg:checked')].map(x=>+x.value),a=$('#d1').value,z=$('#d2').value,ty=$('#ty').value,i1=$('#t1').value,i2=$('#t2').value;
+  if(!ids.length)return toast('Scegli almeno un dipendente');if(!a||!z||z<a)return toast('Controlla le date');if(!gg.length)return toast('Scegli almeno un giorno');if(ty=='lavoro'&&(!i1||!i2||i2<=i1))return toast('Controlla gli orari');
+  const righe=[];for(let d=new Date(a+'T12:00');fd(d)<=z&&righe.length<4000;d.setDate(d.getDate()+1)){if(!gg.includes((d.getDay()+6)%7))continue;for(const id of ids){const p=PE.find(x=>x.id==id);righe.push({azienda_id:P.azienda_id,profilo_id:id,giorno:fd(d),tipo:ty,inizio:ty=='lavoro'?i1:null,fine:ty=='lavoro'?i2:null,sede:p.sede||null})}}
+  if(!righe.length)return toast('Nessun giorno corrisponde alla selezione');if(!confirm('Applicare '+righe.length+' giornate?'))return;
+  for(let i=0;i<righe.length;i+=500)await sv(sb.from('turni').upsert(righe.slice(i,i+500),{onConflict:'profilo_id,giorno'}));
+  toast(righe.length+' giornate salvate');V.ori()}};
+document.addEventListener('click',async e=>{const w=e.target.closest('[data-w]'),c=e.target.closest('[data-c]');
+ if(w){wk=new Date(wk);wk.setDate(wk.getDate()+7*+w.dataset.w);V.ori()}
+ if(c){const[pid,g]=c.dataset.c.split('|'),t=window.TT[pid+'|'+g],p=PE.find(x=>x.id==pid),cur=t?(t.tipo=='riposo'?'riposo':t.inizio.slice(0,5)+'-'+t.fine.slice(0,5)):'';
+  const r=prompt(p.nome+' · '+g+'\nScrivi l\'orario (per esempio 09:00-18:00), oppure "riposo", oppure lascia vuoto per cancellare.',cur);if(r===null)return;const s=r.trim().toLowerCase(),base={azienda_id:P.azienda_id,profilo_id:pid,giorno:g,sede:p.sede||null};
+  if(!s)await sv(sb.from('turni').delete().eq('profilo_id',pid).eq('giorno',g));
+  else if(s=='riposo')await sv(sb.from('turni').upsert({...base,tipo:'riposo',inizio:null,fine:null},{onConflict:'profilo_id,giorno'}));
+  else{const m=s.match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/);if(!m||+m[1]>23||+m[3]>23||+m[2]>59||+m[4]>59)return toast('Formato non valido: scrivi per esempio 09:00-18:00');
+   const z=n=>String(n).padStart(2,'0'),a=z(m[1])+':'+m[2],b=z(m[3])+':'+m[4];if(b<=a)return toast('La fine deve essere dopo l\'inizio');
+   await sv(sb.from('turni').upsert({...base,tipo:'lavoro',inizio:a,fine:b},{onConflict:'profilo_id,giorno'}))}
+  V.ori()}});
 boot();
 </script></body></html>

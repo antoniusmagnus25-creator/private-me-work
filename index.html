@@ -29,7 +29,7 @@ const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!sessio
 const out=async()=>{await sb.auth.signOut();login()};
 
 const show=()=>{clearInterval(bt);
- $('#nav').innerHTML=[['badge','Badge'],['rich','Richieste'],['avv','Avvisi'],['prof','Profilo']].map(t=>`<button class="${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('');
+ $('#nav').innerHTML=[['badge','Badge'],['orari','Orari'],['rich','Richieste'],['avv','Avvisi'],['prof','Profilo']].map(t=>`<button class="${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('');
  V[tab]()};
 
 const scaduta=()=>P.formazione_scadenza&&P.formazione_scadenza<new Date().toISOString().slice(0,10);
@@ -56,5 +56,16 @@ document.addEventListener('click',async e=>{const t=e.target.closest('[data-t]')
  if(l){const{error}=await sb.from('letture_avvisi').insert({avviso_id:l.dataset.l,profilo_id:P.id});toast(error?'Operazione non riuscita':'Lettura confermata');V.avv()}});
 const pwScreen=next=>{if($('#nav'))$('#nav').innerHTML='';$('#app').innerHTML=`<div class="login"><h1>Scegli la tua password</h1><p class="sub">Primo accesso: imposta una password personale (almeno 8 caratteri).</p><label for="n1">Nuova password</label><input id="n1" type="password" autocomplete="new-password"><label for="n2">Ripeti la password</label><input id="n2" type="password" autocomplete="new-password"><p class="msg" id="pe"></p><button class="btn" id="ps">Salva e continua</button></div>`;
  $('#ps').onclick=async()=>{const a=$('#n1').value;if(a.length<8)return $('#pe').textContent='Almeno 8 caratteri';if(a!==$('#n2').value)return $('#pe').textContent='Le password non coincidono';const{error}=await sb.auth.updateUser({password:a,data:{cambia_password:false}});if(error)return $('#pe').textContent='Non riesco a salvare: '+error.message;next()}};
+let mese=new Date(),selD=null;
+V.orari=async()=>{const y=mese.getFullYear(),mo=mese.getMonth(),n=new Date(y,mo+1,0).getDate(),f=(new Date(y,mo,1).getDay()+6)%7,pre=`${y}-${String(mo+1).padStart(2,'0')}-`,p=d=>pre+String(d).padStart(2,'0');
+ const{data}=await sb.from('turni').select('*').eq('profilo_id',P.id).gte('giorno',p(1)).lte('giorno',p(n));const T={};(data||[]).forEach(t=>T[t.giorno]=t);
+ const o=new Date(),op=`${o.getFullYear()}-${String(o.getMonth()+1).padStart(2,'0')}-${String(o.getDate()).padStart(2,'0')}`,sd=selD&&selD.startsWith(pre)?selD:(op.startsWith(pre)?op:p(1)),t=T[sd];
+ const wd=new Date(sd+'T12:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+ $('#app').innerHTML=`<div class="row"><h1 style="text-transform:capitalize">${mese.toLocaleDateString('it-IT',{month:'long',year:'numeric'})}</h1><div><button class="btn t s" data-m="-1" aria-label="Mese precedente">‹</button> <button class="btn t s" data-m="1" aria-label="Mese successivo">›</button></div></div><p class="sub">I miei orari</p>
+<div class="card"><div class="cal">${['L','M','M','G','V','S','D'].map(x=>`<div class="w">${x}</div>`).join('')}${'<i></i>'.repeat(f)}${[...Array(n)].map((_,i)=>{const d=p(i+1),x=T[d];return `<button class="d ${x&&x.tipo=='riposo'?'ri':''} ${d==sd?'sel':''} ${d==op?'td':''}" data-d="${d}">${i+1}<small>${x?(x.tipo=='riposo'?'Riposo':x.inizio.slice(0,2)+'-'+x.fine.slice(0,2)):'&nbsp;'}</small></button>`}).join('')}</div></div>
+<p class="sub" style="text-transform:capitalize;margin-bottom:6px">${wd}</p><div class="card">${t?(t.tipo=='riposo'?'<b>Giorno di riposo</b>':`<span class="sub" style="margin:0">Orario confermato</span><div style="font-size:28px;font-weight:800">${t.inizio.slice(0,5)} – ${t.fine.slice(0,5)}</div>${t.sede?`<span class="sub">${esc(t.sede)}</span>`:''}`):'<span class="sub" style="margin:0">Nessun orario pubblicato per questo giorno.</span>'}</div>`};
+document.addEventListener('click',e=>{const m=e.target.closest('[data-m]'),d=e.target.closest('[data-d]');
+ if(m){mese=new Date(mese.getFullYear(),mese.getMonth()+ +m.dataset.m,1);selD=null;V.orari()}
+ if(d){selD=d.dataset.d;V.orari()}});
 boot();
 </script></body></html>

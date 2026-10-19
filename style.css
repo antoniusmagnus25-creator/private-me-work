@@ -29,3 +29,10 @@ input,select,textarea{width:100%;border:1.5px solid var(--ln);border-radius:12px
 table{width:100%;border-collapse:collapse}th{text-align:left;font-size:12px;letter-spacing:.08em;color:var(--mut);text-transform:uppercase;padding:0 8px 8px}td{padding:10px 8px;border-top:1px solid var(--ln)}td small{display:block;color:var(--mut)}
 .tw{overflow-x:auto}
 #tt{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--g);color:#fff;padding:11px 18px;border-radius:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}#tt.on{opacity:1}
+
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px 2px;text-align:center}
+.cal .w{font-size:11px;color:var(--mut);font-weight:700;padding-bottom:6px}
+.d{border:0;background:none;border-radius:12px;padding:6px 0;min-height:52px;font-weight:700;color:var(--ink)}
+.d small{display:block;font-size:10px;font-weight:500;color:var(--mut)}
+.d.ri{color:var(--mut)}.d.sel{background:var(--g);color:#fff}.d.sel small{color:#c6dbe6}.d.td{box-shadow:inset 0 0 0 2px var(--g2)}
+.tabs button{font-size:13px}
