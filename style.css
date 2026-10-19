@@ -36,3 +36,12 @@ table{width:100%;border-collapse:collapse}th{text-align:left;font-size:12px;lett
 .d small{display:block;font-size:10px;font-weight:500;color:var(--mut)}
 .d.ri{color:var(--mut)}.d.sel{background:var(--g);color:#fff}.d.sel small{color:#c6dbe6}.d.td{box-shadow:inset 0 0 0 2px var(--g2)}
 .tabs button{font-size:13px}
+
+.av{width:84px;height:84px;border-radius:26px;background:var(--lime) center/cover;color:var(--g);display:grid;place-items:center;font-size:30px;font-weight:800;flex:none}
+a.btn{text-decoration:none;display:inline-block}
+.m{max-width:82%;margin:8px 0;padding:8px 12px;border-radius:14px;background:var(--tint);word-break:break-word}
+.m small{display:block;font-size:11px;color:var(--mut);margin-top:2px}
+.m.me{margin-left:auto;background:var(--g);color:#fff}.m.me small{color:#c6dbe6}
+.chat{display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:start}
+@media(max-width:860px){.chat{grid-template-columns:1fr}}
+.tabs button{font-size:12px;padding:10px 2px}

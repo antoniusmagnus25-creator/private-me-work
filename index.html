@@ -29,7 +29,7 @@ const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!sessio
 const out=async()=>{await sb.auth.signOut();login()};
 
 const show=()=>{clearInterval(bt);
- $('#nav').innerHTML=[['badge','Badge'],['orari','Orari'],['rich','Richieste'],['avv','Avvisi'],['prof','Profilo']].map(t=>`<button class="${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('');
+ $('#nav').innerHTML=[['badge','Badge'],['orari','Orari'],['rich','Richieste'],['avv','Avvisi'],['chat','Chat'],['prof','Profilo']].map(t=>`<button class="${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('');
  V[tab]()};
 
 const scaduta=()=>P.formazione_scadenza&&P.formazione_scadenza<new Date().toISOString().slice(0,10);
@@ -67,5 +67,37 @@ V.orari=async()=>{const y=mese.getFullYear(),mo=mese.getMonth(),n=new Date(y,mo+
 document.addEventListener('click',e=>{const m=e.target.closest('[data-m]'),d=e.target.closest('[data-d]');
  if(m){mese=new Date(mese.getFullYear(),mese.getMonth()+ +m.dataset.m,1);selD=null;V.orari()}
  if(d){selD=d.dataset.d;V.orari()}});
+const rid=(f,max=400)=>new Promise((ok,ko)=>{const i=new Image(),u=URL.createObjectURL(f);i.onload=()=>{const k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?ok(b):ko(),'image/jpeg',.85)};i.onerror=ko;i.src=u});
+const dtt=s=>new Date(s).toLocaleString('it-IT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+V.prof=async()=>{const{data:me}=await sb.from('profili').select('*').eq('id',P.id).single();if(me)P=me;
+ let foto='';if(P.foto_path){const{data:s}=await sb.storage.from('foto-profilo').createSignedUrl(P.foto_path,3600);foto=s?s.signedUrl:''}
+ const{data:dc}=await sb.from('documenti').select('*').eq('profilo_id',P.id).order('creato_il',{ascending:false}),urls={};
+ if((dc||[]).length){const{data:su}=await sb.storage.from('documenti').createSignedUrls(dc.map(d=>d.path),300);(su||[]).forEach(x=>urls[x.path]=x.signedUrl)}
+ const ini=P.nome.split(' ').map(x=>x[0]).join('').slice(0,2);
+ $('#app').innerHTML=`<div class="row" style="justify-content:flex-start;gap:16px"><div class="av" ${foto?`style="background-image:url('${esc(foto)}')"`:''}>${foto?'':esc(ini)}</div><div><h1 style="font-size:24px">${esc(P.nome)}</h1><span class="sub" style="margin:0">${esc(P.ruolo_lavoro||'')}</span></div></div>
+<div style="margin:14px 0"><label class="btn t s" style="cursor:pointer;margin:0">Cambia foto<input type="file" id="ft" accept="image/*" hidden></label></div>
+<div class="card">${[['Sede',P.sede],['Matricola',P.matricola],['Email',P.email],['Formazione sicurezza',P.formazione_scadenza?(scaduta()?'Scaduta il ':'Valida fino al ')+P.formazione_scadenza:'—']].map(r=>`<div class="row" style="padding:6px 0"><span class="sub" style="margin:0">${r[0]}</span><b>${esc(r[1]||'—')}</b></div>`).join('')}
+<label for="tl">Telefono</label><input id="tl" type="tel" autocomplete="tel" maxlength="30" value="${esc(P.telefono||'')}"><button class="btn s" id="st" style="margin-top:10px">Salva telefono</button></div>
+<h2>I miei documenti</h2><p class="sub">Visibili solo a te e alle Risorse Umane. Non caricare referti o diagnosi: per le assenze per malattia basta il numero di protocollo del certificato.</p>
+${(dc||[]).map(d=>`<div class="card row"><div><b>${esc(d.nome)}</b><div class="sub" style="margin:0">${esc(d.categoria)} · ${dtt(d.creato_il)}</div></div><div>${urls[d.path]?`<a class="btn t s" href="${esc(urls[d.path])}" target="_blank" rel="noopener">Apri</a> `:''}<button class="btn r s" data-xd="${d.id}|${esc(d.path)}">Elimina</button></div></div>`).join('')||'<p class="sub">Nessun documento caricato.</p>'}
+<div class="card"><label for="cat">Tipo di documento</label><select id="cat"><option>Documento d'identità</option><option>Certificato</option><option>Contratto o lettera</option><option>Altro</option></select><label for="fd">File (PDF, immagine o Word, massimo 10 MB)</label><input type="file" id="fd" accept=".pdf,.docx,image/*"><button class="btn" id="up">Carica documento</button></div>
+<button class="btn t" id="lo">Esci</button>`;
+ $('#lo').onclick=out;
+ $('#st').onclick=async()=>{const{error}=await sb.rpc('aggiorna_mio_profilo',{p_telefono:$('#tl').value});toast(error?'Salvataggio non riuscito':'Telefono salvato')};
+ $('#ft').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const b=await rid(f),path=P.azienda_id+'/'+P.id+'/avatar.jpg';const{error}=await sb.storage.from('foto-profilo').upload(path,b,{upsert:true,contentType:'image/jpeg'});if(error)throw error;const{error:e2}=await sb.rpc('aggiorna_mio_profilo',{p_foto:path});if(e2)throw e2;toast('Foto aggiornata');V.prof()}catch(_){toast('Non riesco a caricare la foto')}};
+ $('#up').onclick=async()=>{const f=$('#fd').files[0];if(!f)return toast('Scegli un file');if(f.size>10485760)return toast('File troppo grande (massimo 10 MB)');
+  const ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5),path=P.azienda_id+'/'+P.id+'/'+Date.now()+'.'+ext;
+  const{error}=await sb.storage.from('documenti').upload(path,f,{contentType:f.type||undefined});if(error)return toast('Caricamento non riuscito: formato non consentito o file troppo grande');
+  const{error:e2}=await sb.from('documenti').insert({azienda_id:P.azienda_id,profilo_id:P.id,nome:f.name,categoria:$('#cat').value,path,dimensione:f.size});
+  if(e2){await sb.storage.from('documenti').remove([path]);return toast('Salvataggio non riuscito')}toast('Documento caricato');V.prof()}};
+V.chat=async()=>{const draw=async()=>{const box=$('#msgs');if(!box)return;const{data}=await sb.from('messaggi').select('*').eq('profilo_id',P.id).order('creato_il');const stick=box.scrollTop+box.clientHeight>=box.scrollHeight-40;
+  box.innerHTML=(data||[]).map(m=>`<div class="m ${m.da_hr?'':'me'}"><div>${esc(m.testo)}</div><small>${m.da_hr?'Risorse Umane · ':''}${dtt(m.creato_il)}</small></div>`).join('')||'<p class="sub">Scrivi un messaggio alle Risorse Umane.</p>';
+  if(stick)box.scrollTop=box.scrollHeight;if((data||[]).some(m=>m.da_hr&&!m.letto))sb.rpc('segna_letti',{p_profilo:P.id})};
+ $('#app').innerHTML=`<h1>Chat</h1><p class="sub">Scrivi alle Risorse Umane: le risposte arrivano qui.</p><div class="card" id="msgs" style="height:52vh;overflow:auto"></div><div class="row" style="flex-wrap:nowrap"><input id="mt" placeholder="Scrivi un messaggio" maxlength="2000" style="flex:1" aria-label="Messaggio"><button class="btn s" id="ms" style="margin:0">Invia</button></div>`;
+ const send=async()=>{const t=$('#mt').value.trim();if(!t)return;$('#mt').value='';const{error}=await sb.from('messaggi').insert({azienda_id:P.azienda_id,profilo_id:P.id,mittente_id:P.id,da_hr:false,testo:t});if(error){toast('Messaggio non inviato');$('#mt').value=t;return}await draw();$('#msgs').scrollTop=1e9};
+ $('#ms').onclick=send;$('#mt').onkeydown=e=>{if(e.key=='Enter')send()};
+ await draw();$('#msgs').scrollTop=1e9;clearInterval(bt);bt=setInterval(()=>{if(tab!='chat'){clearInterval(bt);return}draw()},4000)};
+document.addEventListener('click',async e=>{const x=e.target.closest('[data-xd]');if(!x)return;const[id,path]=x.dataset.xd.split('|');if(!confirm('Eliminare questo documento?'))return;
+ await sb.storage.from('documenti').remove([path]);const{error}=await sb.from('documenti').delete().eq('id',id);toast(error?'Eliminazione non riuscita':'Documento eliminato');V.prof()});
 boot();
 </script></body></html>
