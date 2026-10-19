@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>const CFG={url:'https://xdzwnwkwdzadkwnvzxkl.supabase.co',key:'sb_publishable_k9td9Qw0_Tc1wNeLc197XA_DjlFOAT3'};</script>
 </head><body>
-<main class="wrap" id="app"></main><nav class="tabs" id="nav"></nav><div id="tt" role="status"></div>
+<main class="wrap" id="app"></main><nav id="nav"></nav><div id="tt" role="status"></div>
 <script>
 const sb=supabase.createClient(CFG.url,CFG.key),$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -29,7 +29,7 @@ const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!sessio
 const out=async()=>{await sb.auth.signOut();login()};
 
 const show=()=>{clearInterval(bt);
- $('#nav').innerHTML=[['badge','Badge'],['orari','Orari'],['rich','Richieste'],['avv','Avvisi'],['chat','Chat'],['prof','Profilo']].map(t=>`<button class="${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('');
+ $('#nav').innerHTML=menuHtml();
  V[tab]()};
 
 const scaduta=()=>P.formazione_scadenza&&P.formazione_scadenza<new Date().toISOString().slice(0,10);
@@ -99,5 +99,10 @@ V.chat=async()=>{const draw=async()=>{const box=$('#msgs');if(!box)return;const{
  await draw();$('#msgs').scrollTop=1e9;clearInterval(bt);bt=setInterval(()=>{if(tab!='chat'){clearInterval(bt);return}draw()},4000)};
 document.addEventListener('click',async e=>{const x=e.target.closest('[data-xd]');if(!x)return;const[id,path]=x.dataset.xd.split('|');if(!confirm('Eliminare questo documento?'))return;
  await sb.storage.from('documenti').remove([path]);const{error}=await sb.from('documenti').delete().eq('id',id);toast(error?'Eliminazione non riuscita':'Documento eliminato');V.prof()});
+const GR=[['Il mio lavoro',[['badge','Badge'],['orari','Orari']]],['Richieste e comunicazioni',[['rich','Richieste'],['avv','Avvisi'],['chat','Chat']]],['Account',[['prof','Profilo e documenti']]]];
+const menuHtml=()=>{const cur=GR.flatMap(g=>g[1]).find(x=>x[0]==tab);
+ return `<div class="tb"><button class="mb" data-menu="1" aria-label="Apri il menu"><span></span><span></span><span></span></button><b>${cur?cur[1]:''}</b></div><div class="ov"></div><aside class="dr" aria-label="Menu"><div class="dh"><img src="icon-192.png" alt="" width="36" height="36"><b>Private Me Work</b></div>${GR.map(g=>`<small>${g[0]}</small>${g[1].map(x=>`<button class="${x[0]==tab?'on':''}" data-t="${x[0]}">${x[1]}</button>`).join('')}`).join('')}<button class="lo" data-lo="1">Esci</button></aside>`};
+document.addEventListener('click',e=>{const n=$('#nav');if(!n)return;if(e.target.closest('[data-menu]'))n.classList.toggle('open');else if(e.target.closest('[data-t],.ov'))n.classList.remove('open');if(e.target.closest('[data-lo]'))out()});
+document.addEventListener('keydown',e=>{if(e.key=='Escape'&&$('#nav'))$('#nav').classList.remove('open')});
 boot();
 </script></body></html>
