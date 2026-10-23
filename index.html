@@ -54,7 +54,7 @@ avv:async()=>{const[a,l]=await Promise.all([sb.from('avvisi').select('*').order(
 prof:()=>{$('#app').innerHTML=`<h1>Profilo</h1><p class="sub">${esc(P.nome)}</p><div class="card">${[['Ruolo',P.ruolo_lavoro],['Sede',P.sede],['Matricola',P.matricola],['Formazione sicurezza',P.formazione_scadenza?(scaduta()?'Scaduta il ':'Valida fino al ')+P.formazione_scadenza:'—']].map(r=>`<div class="row" style="padding:8px 0"><span class="sub" style="margin:0">${r[0]}</span><b>${esc(r[1]||'—')}</b></div>`).join('')}</div><button class="btn t" id="lo">Esci</button>`;$('#lo').onclick=out}};
 
 document.addEventListener('click',async e=>{const t=e.target.closest('[data-t]'),l=e.target.closest('[data-l]');
- if(t){tab=t.dataset.t;show();scrollTo(0,0)}
+ if(t){if(t.dataset.t=='_c'){location.href='contabilita.html';return}tab=t.dataset.t;show();scrollTo(0,0)}
  if(l){const{error}=await sb.from('letture_avvisi').insert({avviso_id:l.dataset.l,profilo_id:P.id});toast(error?'Operazione non riuscita':'Lettura confermata');V.avv()}});
 const pwScreen=next=>{if($('#nav'))$('#nav').innerHTML='';$('#app').innerHTML=`<div class="login"><h1>Scegli la tua password</h1><p class="sub">Primo accesso: imposta una password personale (almeno 8 caratteri).</p><label for="n1">Nuova password</label><input id="n1" type="password" autocomplete="new-password"><label for="n2">Ripeti la password</label><input id="n2" type="password" autocomplete="new-password"><p class="msg" id="pe"></p><button class="btn" id="ps">Salva e continua</button></div>`;
  $('#ps').onclick=async()=>{const a=$('#n1').value;if(a.length<8)return $('#pe').textContent='Almeno 8 caratteri';if(a!==$('#n2').value)return $('#pe').textContent='Le password non coincidono';const{error}=await sb.auth.updateUser({password:a,data:{cambia_password:false}});if(error)return $('#pe').textContent='Non riesco a salvare: '+error.message;next()}};
@@ -101,8 +101,9 @@ V.chat=async()=>{const draw=async()=>{const box=$('#msgs');if(!box)return;const{
  await draw();$('#msgs').scrollTop=1e9;clearInterval(bt);bt=setInterval(()=>{if(tab!='chat'){clearInterval(bt);return}draw()},4000)};
 document.addEventListener('click',async e=>{const x=e.target.closest('[data-xd]');if(!x)return;const[id,path]=x.dataset.xd.split('|');if(!confirm('Eliminare questo documento?'))return;
  await sb.storage.from('documenti').remove([path]);const{error}=await sb.from('documenti').delete().eq('id',id);toast(error?'Eliminazione non riuscita':'Documento eliminato');V.prof()});
-const GR=[['Il mio lavoro',[['badge','Badge'],['orari','Orari']]],['Richieste e comunicazioni',[['rich','Richieste'],['avv','Avvisi'],['chat','Chat']]],['Account',[['prof','Profilo e documenti']]]];
-const menuHtml=()=>{const cur=GR.flatMap(g=>g[1]).find(x=>x[0]==tab);
+const GR0=[['Il mio lavoro',[['badge','Badge'],['orari','Orari']]],['Richieste e comunicazioni',[['rich','Richieste'],['avv','Avvisi'],['chat','Chat']]],['Account',[['prof','Profilo e documenti']]]];
+const grp=()=>P&&P.contabile?[...GR0.slice(0,2),['Area contabile',[['_c','Contabilità']]],...GR0.slice(2)]:GR0;
+const menuHtml=()=>{const GR=grp(),cur=GR.flatMap(g=>g[1]).find(x=>x[0]==tab);
  return `<div class="tb"><button class="mb" data-menu="1" aria-label="Apri il menu"><span></span><span></span><span></span></button><b>${cur?cur[1]:''}</b></div><div class="ov"></div><aside class="dr" aria-label="Menu"><div class="dh"><img src="icon-192.png" alt="" width="36" height="36"><b>Private Me Work</b></div>${GR.map(g=>`<small>${g[0]}</small>${g[1].map(x=>`<button class="${x[0]==tab?'on':''}" data-t="${x[0]}">${x[1]}</button>`).join('')}`).join('')}<button class="lo" data-lo="1">Esci</button></aside>`};
 document.addEventListener('click',e=>{const n=$('#nav');if(!n)return;if(e.target.closest('[data-menu]'))n.classList.toggle('open');else if(e.target.closest('[data-t],.ov'))n.classList.remove('open');if(e.target.closest('[data-lo]'))out()});
 document.addEventListener('keydown',e=>{if(e.key=='Escape'&&$('#nav'))$('#nav').classList.remove('open')});
