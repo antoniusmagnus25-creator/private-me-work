@@ -28,8 +28,8 @@ const show=az=>{$('#app').innerHTML=`<div class="row"><h1>Aziende clienti</h1><b
  $('#lo').onclick=out;
  $('#cr').onclick=async()=>{const body={azione:'crea_azienda',nome:$('#an').value,hr_nome:$('#hn').value,hr_email:$('#he').value};if(!body.nome.trim()||!body.hr_nome.trim()||!body.hr_email.trim())return toast('Compila tutti i campi');
   $('#cr').disabled=true;const{data,error}=await sb.functions.invoke('admin-api',{body});$('#cr').disabled=false;
-  if(error||!data?.password)return toast('Creazione non riuscita: controlla i dati e che l\'email non sia già usata');
-  $('#rs').innerHTML=`<div class="card" style="background:var(--tint);margin-top:16px"><b>${esc(data.azienda)}</b> creata.<p class="sub" style="margin:8px 0">Invia al referente queste credenziali (la password è temporanea e andrà cambiata al primo accesso, non sarà più visibile):</p><p><b>Indirizzo:</b> www.privateme.work/hr.html<br><b>Email:</b> ${esc(data.email)}<br><b>Password:</b> <code>${esc(data.password)}</code></p></div>`;
+  if(error||!data?.invitato)return toast('Creazione non riuscita: controlla i dati, che l\'email non sia già usata e che l\'invio email sia attivo');
+  $('#rs').innerHTML=`<div class="card" style="background:var(--tint);margin-top:16px"><b>${esc(data.azienda)}</b> creata.<p class="sub" style="margin:8px 0">Ho inviato un'email di invito a <b>${esc(data.email)}</b>: il referente HR potrà scegliere la password e poi entrare da app.privateme.work/hr.html.</p></div>`;
   const{data:d2}=await sb.functions.invoke('admin-api',{body:{azione:'elenco_aziende'}});if(d2?.aziende){const c=$('#rs').innerHTML;show(d2.aziende);$('#rs').innerHTML=c}}};
 boot();
 </script></body></html>

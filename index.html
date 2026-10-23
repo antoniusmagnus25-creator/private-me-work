@@ -11,6 +11,7 @@
 </head><body>
 <main class="wrap" id="app"></main><nav id="nav"></nav><div id="tt" role="status"></div>
 <script>
+const FORCEPW=/type=(recovery|invite)/.test(location.hash);
 const sb=supabase.createClient(CFG.url,CFG.key),$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const ST={attesa:['wa','In attesa'],ok:['ok','Approvata'],no:['no','Rifiutata']};
@@ -25,7 +26,7 @@ const login=(m='')=>{clearInterval(bt);$('#nav').innerHTML='';$('#app').innerHTM
 const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!session)return login();
  const{data}=await sb.from('profili').select('*').eq('id',session.user.id).maybeSingle();
  if(!data){$('#app').innerHTML='<h1>Profilo non trovato</h1><p class="sub">Chiedi alle Risorse Umane di completare la tua registrazione.</p><button class="btn" id="lo">Esci</button>';$('#lo').onclick=out;return}
- P=data;if(session.user.user_metadata?.cambia_password)return pwScreen(show);show()};
+ P=data;if(FORCEPW||session.user.user_metadata?.cambia_password)return pwScreen(show);show()};
 const out=async()=>{await sb.auth.signOut();login()};
 
 const show=()=>{clearInterval(bt);
