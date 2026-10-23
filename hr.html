@@ -22,7 +22,7 @@ const login=(m='')=>{$('#nav').innerHTML='';$('#app').innerHTML=`<div style="max
  const go=async()=>{const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});error?login('Email o password non corrette'):boot()};
  $('#go').onclick=go;$('#pw').onkeydown=e=>{if(e.key=='Enter')go()}};
 const out=async()=>{await sb.auth.signOut();login()};
-const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!session)return login();
+const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!session)return login(/otp_expired|access_denied/.test(location.hash)?'Il link è scaduto o già usato: chiedi alla tua azienda di inviartene uno nuovo.':'');
  const{data}=await sb.from('profili').select('*').eq('id',session.user.id).maybeSingle();
  if(!data||!['hr','admin'].includes(data.ruolo_app)){$('#app').innerHTML='<h1>Accesso riservato</h1><p class="sub">Questa area è dedicata alle Risorse Umane.</p><button class="btn" id="lo">Esci</button>';$('#lo').onclick=out;return}
  P=data;if(FORCEPW||session.user.user_metadata?.cambia_password)return pwScreen(show);show()};
@@ -54,7 +54,7 @@ V.dip=async()=>{const{data}=await sb.from('profili').select('*').order('nome');c
  $('#ad').onclick=async()=>{const dip=$('#ls').value.split('\n').map(r=>r.split(';').map(x=>x.trim())).filter(r=>r[0]||r[1]).map(r=>({nome:r[0],email:r[1],ruolo_lavoro:r[2],sede:r[3],matricola:r[4],formazione_scadenza:r[5]}));if(!dip.length)return toast('Incolla almeno una riga');if(!confirm('Inviare un invito a '+dip.length+' indirizzi email? Controlla che siano corretti.'))return;
   $('#ad').disabled=true;const{data,error}=await sb.functions.invoke('admin-api',{body:{azione:'crea_dipendenti',dipendenti:dip}});$('#ad').disabled=false;
   if(error||!data?.risultati)return toast('Operazione non riuscita: controlla la funzione su Supabase');
-  $('#rs').innerHTML=`<table style="margin-top:14px"><tbody>${data.risultati.map(r=>`<tr><td>${esc(r.email)}</td><td>${r.invitato?`<span class="bg ok">Invito inviato</span>`:`<span class="bg no">${esc(r.errore)}</span>`}</td></tr>`).join('')}</tbody></table><p class="sub">Gli inviti sono partiti: ogni persona troverà nella posta il link per scegliere la password (se non lo vede, può controllare nello spam).</p>`}};
+  $('#rs').innerHTML=`<table style="margin-top:14px"><tbody>${data.risultati.map(r=>`<tr><td>${esc(r.email)}</td><td>${r.invitato?`<span class="bg ok">Invito inviato</span>`:`<span class="bg no">${esc(r.errore)}</span>`}</td></tr>`).join('')}</tbody></table>${data.risultati.some(r=>r.invitato)?'<p class="sub">Gli inviti segnati come inviati sono partiti: ogni persona troverà nella posta il link per scegliere la password (se non lo vede, può controllare nello spam).</p>':''}${data.risultati.some(r=>r.errore)?'<p class="sub" style="color:var(--rd)">Per gli indirizzi con errore non è stato inviato nulla: controlla il messaggio indicato e riprova.</p>':''}`}};
 document.addEventListener('click',async e=>{const w=e.target.closest('[data-pw]'),a=e.target.closest('[data-at]');
  if(e.target.id=='cp'){try{await navigator.clipboard.writeText(window.CRED||'');toast('Elenco copiato')}catch(_){toast('Copia non riuscita: selezionalo a mano')}}
  if(w){if(!confirm("Inviare di nuovo l'email per scegliere la password?"))return;const{data,error}=await sb.functions.invoke('admin-api',{body:{azione:'reset_password',profilo_id:w.dataset.pw}});toast(error||!data?.ok?'Invio non riuscito':'Email inviata: la persona potrà scegliere una nuova password')}
