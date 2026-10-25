@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><script>try{var _t=localStorage.getItem("pmw-tema");if(_t!="giorno"&&_t!="notte")_t=matchMedia("(prefers-color-scheme: dark)").matches?"notte":"giorno";document.documentElement.setAttribute("data-theme",_t)}catch(e){document.documentElement.setAttribute("data-theme","giorno")}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<link rel="icon" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#033155">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#033155">
 <title>Contabilità · Private Me Work</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -26,7 +26,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>const CFG={url:'https://xdzwnwkwdzadkwnvzxkl.supabase.co',key:'sb_publishable_k9td9Qw0_Tc1wNeLc197XA_DjlFOAT3'};</script>
-</head><body>
+<script src="pwa.js" defer></script></head><body>
 <main class="wrap w" id="app"></main><nav id="nav"></nav><div id="tt" role="status"></div>
 <script>
 const sb=supabase.createClient(CFG.url,CFG.key),$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
