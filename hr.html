@@ -25,7 +25,7 @@ const out=async()=>{await sb.auth.signOut();login()};
 const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!session)return login(/otp_expired|access_denied/.test(location.hash)?'Il link è scaduto o già usato: chiedi alla tua azienda di inviartene uno nuovo.':'');
  const{data}=await sb.from('profili').select('*').eq('id',session.user.id).maybeSingle();
  if(!data||!['hr','admin'].includes(data.ruolo_app)){$('#app').innerHTML='<h1>Accesso riservato</h1><p class="sub">Questa area è dedicata alle Risorse Umane.</p><button class="btn" id="lo">Esci</button>';$('#lo').onclick=out;return}
- P=data;if(FORCEPW||session.user.user_metadata?.cambia_password)return pwScreen(show);show()};
+ P=data;if(FORCEPW||session.user.user_metadata?.cambia_password)return pwScreen(show);if(window.pmwNotifiche)pmwNotifiche(sb);show()};
 const show=()=>{const T=[['ric','Richieste'],['avv','Avvisi'],['acc','Accessi'],['dip','Dipendenti'],['ori','Orari'],['pre','Presenze'],['chat','Chat'],['tor','Tornello (prova)']];
  $('#app').innerHTML=`<div class="row"><h1>${esc(P.nome)} <span>· HR</span></h1><button class="btn t s" id="lo">Esci</button></div><section id="v"></section>`;$('#lo').onclick=out;$('#nav').innerHTML=menuHtml();V[tab]()};
 const tbl=(h,r)=>`<div class="card tw"><table><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${r||`<tr><td colspan="${h.length}" class="sub">Nessun dato.</td></tr>`}</tbody></table></div>`;

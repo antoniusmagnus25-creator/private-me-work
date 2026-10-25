@@ -26,7 +26,7 @@ const login=(m='')=>{clearInterval(bt);$('#nav').innerHTML='';$('#app').innerHTM
 const boot=async()=>{const{data:{session}}=await sb.auth.getSession();if(!session)return login(/otp_expired|access_denied/.test(location.hash)?'Il link è scaduto o già usato: chiedi alla tua azienda di inviartene uno nuovo.':'');
  const{data}=await sb.from('profili').select('*').eq('id',session.user.id).maybeSingle();
  if(!data){$('#app').innerHTML='<h1>Profilo non trovato</h1><p class="sub">Chiedi alle Risorse Umane di completare la tua registrazione.</p><button class="btn" id="lo">Esci</button>';$('#lo').onclick=out;return}
- P=data;if(FORCEPW||session.user.user_metadata?.cambia_password)return pwScreen(()=>{['hr','admin'].includes(P.ruolo_app)?location.replace('hr.html'):show()});if(['hr','admin'].includes(P.ruolo_app)&&(matchMedia('(display-mode: standalone)').matches||navigator.standalone)&&!sessionStorage.getItem('pmw-hr')){sessionStorage.setItem('pmw-hr','1');return location.replace('hr.html')}show()};
+ P=data;if(FORCEPW||session.user.user_metadata?.cambia_password)return pwScreen(()=>{['hr','admin'].includes(P.ruolo_app)?location.replace('hr.html'):show()});if(['hr','admin'].includes(P.ruolo_app)&&(matchMedia('(display-mode: standalone)').matches||navigator.standalone)&&!sessionStorage.getItem('pmw-hr')){sessionStorage.setItem('pmw-hr','1');return location.replace('hr.html')}if(window.pmwNotifiche)pmwNotifiche(sb);show()};
 const out=async()=>{await sb.auth.signOut();login()};
 
 const show=()=>{clearInterval(bt);
